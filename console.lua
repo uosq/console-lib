@@ -1,7 +1,6 @@
-local test = false
-local version = 0.1
-local prefix = ""
-local command_list = {}
+local prefixes = {}
+
+local keys = {callback = "callback", required_parameters = "required_parameters"}
 
 ---@param s string
 ---@return table
@@ -13,84 +12,145 @@ function string.split(s, sep)
     return words
 end
 
-local function change_prefix(new_prefix)
-    prefix = new_prefix
-    if not prefix == new_prefix then
-        return false
-    end
-    return true
-end
-
----@param name string
-local function create_command(name)
-    assert(command_list, "command_list is nil")
-    command_list[name] = {
-        callback = nil,
-        required_parameters = {}, -- {name = "string"}
+---@param new_prefix string
+local function create_prefix(new_prefix)
+    prefixes[new_prefix] = {
+        command_list = {}
     }
-    if not command_list[name] then
-        return false
+
+    if prefixes[new_prefix] then
+        printc(100,255,100,255, string.format("created prefix %s", tostring(new_prefix)))
+        return true
     end
-    return true
+    return false
 end
 
+---@param prefix string
 ---@param name string
-local function destroy_command(name)
-    assert(command_list, "command_list is nil")
-    command_list[name] = nil
-    if not command_list[name] then
+local function create_command(prefix, name)
+    --assert(prefixes[prefix], "prefix is nil")
+    --assert(prefixes[prefix].command_list, "command_list is nil")
+    prefixes[prefix].command_list[name] = {
+        callback = nil,
+        required_parameters = {}, -- {name = "string"},
+        description = "",
+    }
+
+    if not prefixes[prefix].command_list[name] then
+        printc(255,100,100,255, "couldn't create command %s at prefix %s", name, prefix)
+    else
+        printc(100,255,100,255, string.format("create command %s at prefix %s", name, prefix))
+    end
+
+end
+
+---@param prefix string
+---@param name string
+local function destroy_command(prefix, name)
+    assert(prefixes[prefix], "prefix is nil")
+    assert(prefixes[prefix].command_list, "command_list is nil")
+    prefixes[prefix].command_list[name] = nil
+    if prefixes[prefix].command_list[name] then
+        printc(255,100,100,255, string.format("command %s at prefix %s wasn't destroyed somehow", name, prefix))
         return false
     end
+    printc(100,255,100,255, string.format("destroyed command %s at prefix %s", name, prefix))
     return true
 end
 
+---@param prefix string
 ---@param name string
 ---@param key string
 ---@param value any
-local function change_command(name, key, value)
-    assert(command_list, "command_list is nil")
-    assert((key and value), "error")
-    command_list[name][key] = value
-    if not command_list[name][key] == value then
+local function change_command(prefix, name, key, value)
+    assert(prefixes[prefix], "prefix is nil")
+    assert(prefixes[prefix].command_list, "command_list is nil")
+    prefixes[prefix].command_list[name][key] = value
+    if not prefixes[prefix].command_list[name][key] == value then
         warn(string.format("couldn't change %s's %s to be %s", tostring(name), tostring(key), tostring(value)))
         return false
     end
+    printc(100,255,100,255, string.format("changed command %s's %s at prefix %s", name, key, prefix))
     return true
+end
+
+local function command_exists(prefix, name)
+    if prefixes[prefix].command_list[name] then
+        return true
+    end
+    return false
 end
 
 ---@param str StringCmd
 local function run_command(str)
-    assert(command_list, "command_list is nil")
-
     local cmd = string.split(str:Get(), "%S+")
-    if cmd[1] ~= prefix then return end
+
+    local prefix
+    for k,v in pairs (prefixes) do
+        if k == tostring(cmd[1]) then
+            prefix = v
+            print("found prefix " .. k)
+        end
+    end
+
+    if prefix == nil then return end
+    table.remove(cmd, 1)
 
     -- Extract the command name and parameters
     local command_name = cmd[1]
-    local parameters = {}
-    for i = 2, #cmd do
-        parameters[i - 1] = cmd[i]
-    end
+    print(command_name)
+    table.remove(cmd, 1)
 
-        -- Check if the command exists
-    if not command_list[command_name] then
+    -- Check if the command exists
+    if not prefix.command_list[command_name] then
         error("Command '" .. command_name .. "' not found.")
     end
-    -- Check if the required parameters are provided and of the correct types
-    for k, v in pairs(command_list[command_name].required_parameters) do
-        if not parameters[k] then
-            error("Missing required parameter '" .. k .. "' for command '" .. command_name .. "'.")
+
+    local parameters = {}
+
+    -- convert parameters[key] to the desired type
+    for k, v in pairs (prefix.command_list[command_name].required_parameters) do
+        if tostring(v) == "string" then
+            parameters[k] = tostring(cmd[1])
+            table.remove(cmd, 1)
+        elseif tostring(v) == "number" then
+            parameters[k] = tonumber(cmd[1])
+            table.remove(cmd, 1)
+        elseif tostring(v) == "bool" then
+            if tostring(cmd[1]) == "true" then
+                parameters[k] = true
+                table.remove(cmd, 1)
+            else
+                parameters[k] = false
+                table.remove(cmd, 1)
+            end
+        elseif tostring(v) == "function" then
+            local func_body = load(table.concat(cmd, " "))
+            parameters[k] = func_body
+            cmd = {}
+            break
+        elseif  tostring(v) == "table" then
+            local concated = table.concat(cmd, " ")
+            local new_table = load(concated)()
+            if type(new_table) ~= "table" then
+                error(string.format("the new table %s is NOT a table", concated))
+            end
+            parameters[k] = new_table
+            cmd = {}
+            break
         end
-        if type(parameters[k]) ~= v then
-            error("Incorrect type for parameter '" .. k .. "' in command '" .. command_name .. "'. Expected " .. v .. ", got " .. type(parameters[k]) .. ".")
-        end
+    end
+
+    if #cmd > 0 then
+        printc(255,100,100,255, "Too many parameters")
     end
 
     -- Call the command's callback with the parameters
-    return pcall(command_list[command_name].callback, parameters)
+    return pcall(prefix.command_list[command_name].callback, parameters)
 end
 
 local function unload()
+    prefixes = nil
     package.loaded.consolelib = nil
 end
 
@@ -107,25 +167,48 @@ callbacks.Register("SendStringCmd", "console_lib", run_command)
 callbacks.Register("Unload", unload)
 printc(100,255,100,255, string.format("Console lib %.1f loaded", version))
 
-assert(#command_list == 0, "command_list is empty, did you forget to create a command or is this a bug?")
+create_prefix("con")
 
-if test then
-    local suc, create_result = pcall(create_command, "test")
-    local suc, prefix_result = pcall(change_prefix, "test2")
-    local suc, change_result1 = pcall(change_command, "test", "callback", function(params)
-        if type(params.test_param) == "number" and type(params.test_param2) == "string" then
-            return true
-        end
-        return false
-    end)
-    local suc, change_result2 = pcall(change_command, "test", "required_parameters", {test_param = "number", test_param2 = "string"})
-    local suc, run_result = pcall(run_command, "test2 test 1231234 hello true {helloworld='hi'}")
-    local suc, destroy_result = pcall(destroy_command, "test")
-    
-    print(string.format(
-    "create_command result: %s\nchange_prefix result: %s\nchange_command result 1: %s\n"
-  .."change_command result 2: %s\nrun_command result: %s\ndestroy_command result: %s",
-    tostring(create_result), tostring(prefix_result), tostring(change_result1),
-    tostring(change_result2), tostring(run_result), tostring(destroy_result)
-    ))
-end
+create_command("con", "create-command")
+change_command("con", "create-command", keys.required_parameters, {prefix = "string", cmd_name = "string"})
+change_command("con", "create-command", keys.callback, function(params)
+    create_command(params.prefix, params.cmd_name)
+end)
+
+create_command("con", "destroy-command")
+change_command("con", "destroy-command", keys.required_parameters, {prefix = "string", cmd_name = "string"})
+change_command("con", "destroy-command", keys.callback, function(params)
+    destroy_command(params.prefix, params.cmd_name)
+end)
+
+create_command("con", "change-command-callback")
+change_command("con", "change-command-callback", keys.required_parameters, {prefix = "string", cmd_name = "string", callback = "function"})
+change_command("con", "change-command-callback", keys.callback, function(params)
+    change_command(params.prefix, params.cmd_name, keys.callback, params.callback)
+end)
+
+create_command("con", "change-command-parameters")
+change_command("con", "change-command-parameters", keys.required_parameters, {prefix = "string", cmd_name = "string", new_params = "table"})
+change_command("con", "change-command-parameters", keys.callback, function(params)
+    change_command(params.prefix, params.cmd_name, keys.required_parameters, params.new_params)
+end)
+
+create_command("con", "create-prefix")
+change_command("con", "create-prefix", keys.required_parameters, {new_prefix = "string"})
+change_command("con", "create-prefix", keys.callback, function(params)
+    create_prefix(params.new_prefix)
+end)
+
+create_command("con", "command-exist")
+change_command("con", "command-exist", keys.required_parameters, {prefix = "string", cmd_name = "string"})
+change_command("con", "command-exist", keys.callback, function(params)
+    print(command_exists(params.prefix, params.cmd_name))
+end)
+
+local lib = {}
+lib.version = 0.2
+lib.create_command = create_command
+lib.change_command = change_command
+lib.destroy_command = destroy_command
+lib.create_prefix = create_prefix
+return lib
