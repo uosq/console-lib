@@ -129,7 +129,11 @@ local function run_command(str)
             parameters[k] = func_body
             cmd = {}
             break
-        elseif  tostring(v) == "table" then
+        elseif tostring(v) == "table" then
+            if string.sub(cmd[1], 1, 1) ~= "{" then
+                error("This parameter needs to start with a {, but it doesn't")
+                break
+            end
             local concated = table.concat(cmd, " ")
             local new_table = load(concated)()
             if type(new_table) ~= "table" then
@@ -154,19 +158,19 @@ local function unload()
     package.loaded.consolelib = nil
 end
 
--- Example of input
--- prefix command parameters
---[[change_prefix("con")
-create_command("test")
-change_command("test", "callback", function()
-    print("hello world")
-end)]]
+local lib = {}
+lib.version = 0.2
+lib.create_command = create_command
+lib.change_command = change_command
+lib.destroy_command = destroy_command
+lib.create_prefix = create_prefix
+lib.unload = unload
 
 callbacks.Unregister("SendStringCmd", "console-lib")
 callbacks.Register("SendStringCmd", "console_lib", run_command)
-callbacks.Register("Unload", unload)
-printc(100,255,100,255, string.format("Console lib %.1f loaded", version))
+printc(100,255,100,255, string.format("Console lib %.1f loaded", lib.version))
 
+printc(255,255,255,255, "Adding 'con' prefix and default commands")
 create_prefix("con")
 
 create_command("con", "create-command")
@@ -205,10 +209,4 @@ change_command("con", "command-exist", keys.callback, function(params)
     print(command_exists(params.prefix, params.cmd_name))
 end)
 
-local lib = {}
-lib.version = 0.2
-lib.create_command = create_command
-lib.change_command = change_command
-lib.destroy_command = destroy_command
-lib.create_prefix = create_prefix
 return lib
