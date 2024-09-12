@@ -167,14 +167,6 @@ local function unload()
     package.loaded.console = nil
 end
 
-local lib = {}
-lib.version = 0.2
-lib.create_command = create_command
-lib.change_command = change_command
-lib.destroy_command = destroy_command
-lib.create_prefix = create_prefix
-lib.unload = unload
-
 callbacks.Unregister("SendStringCmd", "console-lib")
 callbacks.Register("SendStringCmd", "console_lib", run_command)
 
@@ -216,6 +208,14 @@ command_exist_command.required_parameters = {prefix = "string", cmd_name = "stri
 command_exist_command.callback = function(params)
     print(command_exists(params.prefix, params.cmd_name))
 end
+
+local lib = {}
+lib.version = 0.2
+lib.create_command = create_command
+lib.change_command = change_command
+lib.destroy_command = destroy_command
+lib.create_prefix = create_prefix
+lib.unload = unload
 
 printc(100,255,100,255, string.format("Console lib %.1f loaded", lib.version))
 if not debug then
