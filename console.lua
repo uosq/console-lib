@@ -149,7 +149,7 @@ local function run_command(str)
             --table.remove(cmd, 1)
             local concated = table.concat(cmd, " ")
             print(concated)
-            local new_table = load("return " .. concated, nil, "t", {})()
+            local new_table = load("return " .. concated)()
             if type(new_table) ~= "table" then
                 error(string.format("the new table %s is NOT a table", new_table))
             end
@@ -164,7 +164,7 @@ local function run_command(str)
     end
 
     -- Call the command's callback with the parameters
-    return xpcall(prefix.command_list[command_name].callback, debug.traceback, parameters)
+    return pcall(prefix.command_list[command_name].callback, parameters)
 end
 
 local function unload()
