@@ -4,7 +4,6 @@
 ---@field description string The description of the command
 
 local prefixes = {}
-local debug = true
 local keys = {callback = "callback", required_parameters = "required_parameters"}
 
 ---@param s string
@@ -141,19 +140,18 @@ local function run_command(str)
                 table.remove(cmd, 1)
             end
         elseif tostring(v) == "function" then
+            table.remove(cmd, 1)
             local func_body = load(table.concat(cmd, " "))
             parameters[k] = func_body
             cmd = {}
             break
         elseif tostring(v) == "table" then
-            if string.sub(cmd[1], 1, 1) ~= "{" then
-                error("This parameter needs to start with a \"{\", but it doesn't")
-                break
-            end
+            --table.remove(cmd, 1)
             local concated = table.concat(cmd, " ")
-            local new_table = load(concated)()
+            print(concated)
+            local new_table = load("return " .. concated)()
             if type(new_table) ~= "table" then
-                error(string.format("the new table %s is NOT a table", concated))
+                error(string.format("the new table %s is NOT a table", new_table))
             end
             parameters[k] = new_table
             cmd = {}
@@ -174,7 +172,7 @@ local function unload()
     package.loaded.console = nil
 end
 
-callbacks.Unregister("SendStringCmd", "console-lib")
+callbacks.Unregister("SendStringCmd", "console_lib")
 callbacks.Register("SendStringCmd", "console_lib", run_command)
 
 printc(255,255,255,255, "Adding 'con' prefix and default commands")
@@ -225,6 +223,4 @@ lib.create_prefix = create_prefix
 lib.unload = unload
 
 printc(100,255,100,255, string.format("Console lib %.1f loaded", lib.version))
-if not debug then
-    return lib
-end
+return lib
