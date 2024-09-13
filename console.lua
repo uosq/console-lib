@@ -17,6 +17,7 @@ function string.split(s, sep)
     return words
 end
 
+-- this is probably the second most important function in the lib
 ---@param new_prefix string
 local function create_prefix(new_prefix)
     prefixes[new_prefix] = {
@@ -30,6 +31,7 @@ local function create_prefix(new_prefix)
     return false
 end
 
+-- makes a Command that is literally just a table with another name but i like it :)
 ---@param prefix string
 ---@param name string
 ---@return Command|nil
@@ -53,6 +55,7 @@ local function create_command(prefix, name)
     return prefixes[prefix].command_list[name]
 end
 
+-- fancy way of saying command = nil
 ---@param prefix string
 ---@param name string
 local function destroy_command(prefix, name)
@@ -67,6 +70,7 @@ local function destroy_command(prefix, name)
     return true
 end
 
+-- changes a command[key] to a value so yeah, it's probably useless now that you can change the values with a command.callback/required_parameters and stuff so yeah have fun
 ---@param prefix string
 ---@param name string
 ---@param key string
@@ -83,6 +87,7 @@ local function change_command(prefix, name, key, value)
     return true
 end
 
+-- to be honest i forgor this function existed
 local function command_exists(prefix, name)
     if prefixes[prefix].command_list[name] then
         return true
@@ -90,6 +95,8 @@ local function command_exists(prefix, name)
     return false
 end
 
+--i want to say i like this, but i really like this so yeah
+--most of the inspiration for this lib comes from another script i made but for roblox :)
 ---@param str StringCmd
 local function run_command(str)
     local cmd = string.split(str:Get(), "%S+")
