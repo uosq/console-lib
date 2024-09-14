@@ -95,7 +95,6 @@ local function command_exists(prefix, name)
 end
 
 --i want to say i like this, but i really like this so yeah
---most of the inspiration for this lib comes from another script i made but for roblox :)
 ---@param str StringCmd
 local function run_command(str)
     local cmd = string.split(str:Get(), "%S+")
@@ -170,6 +169,7 @@ end
 local function unload()
     prefixes = nil
     package.loaded.console = nil
+    callbacks.Unregister("SendStringCmd","console_lib")
 end
 
 callbacks.Unregister("SendStringCmd", "console_lib")
