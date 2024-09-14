@@ -164,7 +164,7 @@ local function run_command(str)
     end
 
     -- Call the command's callback with the parameters
-    return pcall(prefix.command_list[command_name].callback, parameters)
+    return xpcall(prefix.command_list[command_name].callback, debug.traceback, parameters)
 end
 
 local function unload()
