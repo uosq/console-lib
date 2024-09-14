@@ -215,7 +215,7 @@ command_exist_command.callback = function(params)
 end
 
 local lib = {}
-lib.version = 0.2
+lib.version = 0.3
 lib.create_command = create_command
 lib.change_command = change_command
 lib.destroy_command = destroy_command
