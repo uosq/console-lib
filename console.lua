@@ -125,36 +125,36 @@ local function run_command(str)
 	-- convert parameters[key] to the desired type
 	for k, v in pairs (prefix.command_list[command_name].required_parameters) do
 		if tostring(v) == "string" then
-				parameters[k] = tostring(cmd[1])
-				table.remove(cmd, 1)
+			parameters[k] = tostring(cmd[1])
+			table.remove(cmd, 1)
 		elseif tostring(v) == "number" then
-				parameters[k] = tonumber(cmd[1])
-				table.remove(cmd, 1)
+			parameters[k] = tonumber(cmd[1])
+			table.remove(cmd, 1)
 		elseif tostring(v) == "bool" then
-				if tostring(cmd[1]) == "true" then
-					parameters[k] = true
-					table.remove(cmd, 1)
-				else
-					parameters[k] = false
-					table.remove(cmd, 1)
-				end
-		elseif tostring(v) == "function" then
+			if tostring(cmd[1]) == "true" then
+				parameters[k] = true
 				table.remove(cmd, 1)
-				local func_body = load(table.concat(cmd, " "), nil, "t")
-				parameters[k] = func_body
-				cmd = {}
-				break
+			else
+				parameters[k] = false
+				table.remove(cmd, 1)
+			end
+		elseif tostring(v) == "function" then
+			table.remove(cmd, 1)
+			local func_body = load(table.concat(cmd, " "), nil, "t")
+			parameters[k] = func_body
+			cmd = {}
+			break
 		elseif tostring(v) == "table" then
 				--table.remove(cmd, 1)
-				local concated = table.concat(cmd, " ")
-				print(concated)
-				local new_table = load("return " .. concated, nil, "t")()
-				if type(new_table) ~= "table" then
-					error(string.format("the new table %s is NOT a table", new_table))
-				end
-				parameters[k] = new_table
-				cmd = {}
-				break
+			local concated = table.concat(cmd, " ")
+			print(concated)
+			local new_table = load("return " .. concated, nil, "t")()
+			if type(new_table) ~= "table" then
+				error(string.format("the new table %s is NOT a table", new_table))
+			end
+			parameters[k] = new_table
+			cmd = {}
+			break
 		end
 	end
 
