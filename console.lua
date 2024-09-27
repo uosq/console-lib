@@ -221,6 +221,7 @@ lib.change_command = change_command
 lib.destroy_command = destroy_command
 lib.create_prefix = create_prefix
 lib.unload = unload
+lib.keys = keys
 
 printc(100,255,100,255, string.format("Console lib %.1f loaded", lib.version))
 return lib
